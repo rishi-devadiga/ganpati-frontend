@@ -8,6 +8,11 @@
             <h2 class="mb-0">Sankalp Utsav Samiti</h2>
             <p class="mb-0">Poonam Sagar Cha Raja</p>
           </div>
+          <div v-if="loading" class="loading-overlay">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
           <div class="card-body bg-light">
             <form>
               <div class="mb-3">
@@ -37,6 +42,14 @@
               <div class="mb-3">
                 <label class="form-label">Amount (INR)</label>
                 <input v-model="form.amount" type="number" min="1" class="form-control" placeholder="Amount" required />
+              </div>
+              <!-- Status dropdown only if cash -->
+              <div v-if="form.transaction_type === 'cash'">
+                <label>Status</label>
+                <select v-model="status" class="form-select" required>
+                  <option value="pending">Pending</option>
+                  <option value="completed">Completed</option>
+                </select>
               </div>
               <div class="d-flex justify-content-between">
                 <button v-if="form.transaction_type === 'online'" type="button" class="btn btn-success" @click="payNow">
@@ -72,9 +85,13 @@ const form = ref({
   amount: 0
 })
 const data = ref({ status: '' }) // 1. Track payment status
+const loading = ref(false) // 2. Track loading state
+const status = ref('null');
+const transaction_type = ref('null') // 5. Track status for cash payments
 
 async function generateReceipt(data) {
   const doc = new jsPDF({orientation: 'landscape'});
+  loading.value = true; // 3. Set loading state to true
 
   const logoUrl = '/receiptLogo.png';
   const logoData = await loadImageAsBase64(logoUrl);
@@ -109,9 +126,11 @@ async function generateReceipt(data) {
     await axios.post("https://ganpati-backend.onrender.com/send-receipt", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    alert("Receipt sent successfully!");
   } catch (error) {
     console.error("Failed to send:", error);
+  }
+  finally {
+    loading.value = false; // 4. Reset loading state
   }
 }
 async function loadImageAsBase64(url) {
@@ -191,6 +210,7 @@ const cashPay = async () => {
     generateReceipt({
       ...form.value,
       transaction_type: 'cash',
+      ...(transaction_type.value === 'cash' ? { status: status.value } : {}),
       amount: form.value.amount * 100, // convert to paise for consistency with PDF
       razorpay_order_id: 'CASH',
       razorpay_payment_id: 'CASH'
@@ -210,5 +230,15 @@ body {
 }
 .card {
   border-radius: 1rem;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
 }
 </style>
