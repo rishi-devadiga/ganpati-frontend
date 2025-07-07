@@ -82,41 +82,37 @@ const form = ref({
   phone: '',
   email: '',
   transaction_type: '',
-  amount: 0
+  amount: 0,
+  status: '' // 1. Add status field to form
 })
 const data = ref({ status: '' }) // 1. Track payment status
 const loading = ref(false) // 2. Track loading state
-const status = ref('null');
-const transaction_type = ref('null') // 5. Track status for cash payments
+
 
 async function generateReceipt(data) {
-  const doc = new jsPDF({orientation: 'landscape'});
+  const doc = new jsPDF({orientation: 'landscape', unit: 'mm'}); // A5 size
   loading.value = true; // 3. Set loading state to true
 
-  const logoUrl = '/receiptLogo.png';
-  const logoData = await loadImageAsBase64(logoUrl);
-  doc.addImage(logoData, 'PNG', 20, 20, 50, 50); // Adjust size and position as needed
-  doc.setFontSize(20);
-  doc.setTextColor(255, 0, 0);
-  doc.setFont('Ancizar Serif', 'bold');
-  doc.text('Sankalp Utsav Samiti', 100, 25);
-  doc.text('Poonam Sagar Cha Raja', 100, 35);
-  doc.text('________________________________________', 20, 45);
+  const bgUrl = '/receipt.jpg'; // path to your background image
+  const bgData = await loadImageAsBase64(bgUrl);
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  doc.addImage(bgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+
+  // Adjust size and position as needed
 
   doc.setFontSize(16);
   doc.setTextColor(0, 0, 0);
-  doc.text(`Name: ${data.name}`, 20, 50);
-  doc.text(`Address: ${data.address}`, 20, 60);
-  doc.text(`Phone: ${data.phone}`, 20, 70);
-  doc.text(`Email: ${data.email}`, 20, 80);
-  doc.text(`Transaction Type: ${data.transaction_type}`, 20, 90);
-  doc.text(`Amount: ₹ ${(data.amount / 100).toFixed(2)}`, 20, 100);
-  doc.text(`Order ID: ${data.razorpay_order_id}`, 20, 110);
-  doc.text(`Payment ID: ${data.razorpay_payment_id}`, 20, 120);
-  doc.text(`Date: ${new Date().toLocaleString()}`, 20, 130);
+  doc.text(`${data.name}`, 150, 85);
+  doc.text(`${data.transaction_type}`, 50, 120);
+  doc.text(`${(data.amount / 100).toFixed(2)}`, 70, 150);
+  doc.text(`${data.id}`, 60, 70);
+  doc.text(`${new Date().toLocaleString()}`, 230, 70);
 
 
   const pdfBlob = doc.output("blob");
+  console.log("PDF size (MB):", pdfBlob.size / (1024 * 1024));
 
   const formData = new FormData();
   formData.append("email", form.value.email);
@@ -143,7 +139,7 @@ async function loadImageAsBase64(url) {
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
+      resolve(canvas.toDataURL('image/jpeg', 0.1)); // Adjust quality as needed
     };
     img.onerror = (error) => reject(error);
     img.src = url;
@@ -182,6 +178,7 @@ const payNow = async () => {
         data.value.status = 'success';
         generateReceipt({
           ...userData,
+          id: result.id, // Use the ID from the backend
           transaction_type: 'online',
           amount: userData.amount, // This is in paise, adjust if needed
           razorpay_order_id: response.razorpay_order_id,
@@ -209,8 +206,9 @@ const cashPay = async () => {
     data.value.status = 'success';
     generateReceipt({
       ...form.value,
+      id: result.id, // Use the ID from the backend
       transaction_type: 'cash',
-      ...(transaction_type.value === 'cash' ? { status: status.value } : {}),
+      ...(form.value.transaction_type === 'cash' ? { status: form.value.status } : {}),
       amount: form.value.amount * 100, // convert to paise for consistency with PDF
       razorpay_order_id: 'CASH',
       razorpay_payment_id: 'CASH'
