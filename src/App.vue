@@ -44,7 +44,7 @@
                 <input v-model="form.amount" type="number" min="1" class="form-control" placeholder="Amount" required />
               </div>
               <!-- Status dropdown only if cash -->
-              <div v-if="form.transaction_type === 'cash'">
+              <div v-if="form.transaction_type === 'cash'" class="mb-3">
                 <label>Status</label>
                 <select v-model="status" class="form-select" required>
                   <option value="pending">Pending</option>
@@ -75,6 +75,7 @@
 import { ref } from 'vue'
 import jsPDF from 'jspdf'
 import axios from 'axios'
+import { toWords } from 'number-to-words'
 
 const form = ref({
   name: '',
@@ -101,14 +102,17 @@ async function generateReceipt(data) {
   doc.addImage(bgData, 'JPEG', 0, 0, pageWidth, pageHeight);
 
   // Adjust size and position as needed
+  const amountInRupees = data.amount / 100;
+  const amountInWords = toWords(amountInRupees) + ' rupees only';
 
   doc.setFontSize(16);
   doc.setTextColor(0, 0, 0);
-  doc.text(`${data.name}`, 150, 85);
+  doc.text(`${data.name} ${data.address}`, 150, 85);
   doc.text(`${data.transaction_type}`, 50, 120);
   doc.text(`${(data.amount / 100).toFixed(2)}`, 70, 150);
   doc.text(`${data.id}`, 60, 70);
   doc.text(`${new Date().toLocaleString()}`, 230, 70);
+  doc.text(`${amountInWords}`, 110, 100);
 
 
   const pdfBlob = doc.output("blob");
@@ -122,6 +126,7 @@ async function generateReceipt(data) {
     await axios.post("https://ganpati-backend.onrender.com/send-receipt", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+    alert("Receipt sent successfully!");
   } catch (error) {
     console.error("Failed to send:", error);
   }
@@ -200,8 +205,10 @@ const cashPay = async () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(form.value)
   });
+  loading.value = true; // Show loading overlay
   const result = await res.json();
   if (result.status === 'success') {
+    loading.value = false; // Hide loading overlay
     alert('Cash payment recorded');
     data.value.status = 'success';
     generateReceipt({
