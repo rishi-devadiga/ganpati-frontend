@@ -205,10 +205,8 @@ const cashPay = async () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(form.value)
   });
-  loading.value = true; // Show loading overlay
   const result = await res.json();
   if (result.status === 'success') {
-    loading.value = false; // Hide loading overlay
     alert('Cash payment recorded');
     data.value.status = 'success';
     generateReceipt({
