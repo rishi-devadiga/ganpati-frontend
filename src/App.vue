@@ -77,6 +77,8 @@ import jsPDF from 'jspdf'
 import axios from 'axios'
 import { toWords } from 'number-to-words'
 
+const BACKEND_URL = "https://ganpati-backend.onrender.com";
+
 const form = ref({
   name: '',
   address: '',
@@ -103,14 +105,17 @@ async function generateReceipt(data) {
 
   // Adjust size and position as needed
   const amountInRupees = data.amount / 100;
-  const amountInWords = toWords(amountInRupees) + ' rupees only';
+  let amountInWords = toWords(amountInRupees) + ' rupees only';
+  amountInWords = amountInWords.charAt(0).toUpperCase() + amountInWords.slice(1);
+
+  let formattedId = String(data.id).padStart(3, '0');
 
   doc.setFontSize(16);
   doc.setTextColor(0, 0, 0);
   doc.text(`${data.name} ${data.address}`, 150, 85);
   doc.text(`${data.transaction_type}`, 50, 120);
   doc.text(`${(data.amount / 100).toFixed(2)}`, 70, 150);
-  doc.text(`${data.id}`, 60, 70);
+  doc.text(`2025/${formattedId}`, 65, 70);
   doc.text(`${new Date().toLocaleString()}`, 230, 70);
   doc.text(`${amountInWords}`, 110, 100);
 
@@ -123,7 +128,7 @@ async function generateReceipt(data) {
   formData.append("pdf", pdfBlob, "receipt.pdf");
 
   try {
-    await axios.post("https://ganpati-backend.onrender.com/send-receipt", formData, {
+    await axios.post(`${BACKEND_URL}/send-receipt`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     alert("Receipt sent successfully!");
@@ -152,7 +157,7 @@ async function loadImageAsBase64(url) {
 }
 
 const payNow = async () => {
-  const res = await fetch('https://ganpati-backend.onrender.com/create-order', {
+  const res = await fetch(`${BACKEND_URL}/create-order`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...form.value, amount: form.value.amount * 100 }) // send in paise
@@ -167,7 +172,7 @@ const payNow = async () => {
     name: 'Rishi Sadashiva Devadiga',
     order_id: order.id,
     handler: async (response) => {
-      const res = await fetch('https://ganpati-backend.onrender.com/verify-payment', {
+      const res = await fetch(`${BACKEND_URL}/verify-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -200,7 +205,7 @@ const payNow = async () => {
 }
 
 const cashPay = async () => {
-  const res = await fetch('https://ganpati-backend.onrender.com/cash-payment', {
+  const res = await fetch(`${BACKEND_URL}/cash-payment`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(form.value)
