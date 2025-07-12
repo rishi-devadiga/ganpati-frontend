@@ -94,7 +94,7 @@ import jsPDF from 'jspdf'
 import axios from 'axios'
 import { toWords } from 'number-to-words'
 
-const BACKEND_URL = "http://localhost:5000";
+const BACKEND_URL = "https://ganpati-backend.onrender.com";
 
 const form = ref({
   name: '',
