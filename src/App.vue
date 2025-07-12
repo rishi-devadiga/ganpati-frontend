@@ -21,7 +21,7 @@
               </div>
               <div class="mb-3">
                 <label class="form-label">Address</label>
-                <input v-model="form.address" class="form-control" placeholder="Your Address" required />
+                <input v-model="form.address" class="form-control" placeholder="Eg: S 2 A 403" required />
               </div>
               <div class="mb-3">
                 <label class="form-label">Phone</label>
@@ -85,7 +85,7 @@ const form = ref({
   phone: '',
   email: '',
   transaction_type: '',
-  amount: 0,
+  amount: null,
   status: '' // 1. Add status field to form
 })
 const data = ref({ status: '' }) // 1. Track payment status
@@ -116,8 +116,10 @@ async function generateReceipt(data) {
   doc.text(`${data.transaction_type}`, 50, 120);
   doc.text(`${(data.amount / 100).toFixed(2)}`, 70, 150);
   doc.text(`2025/${formattedId}`, 65, 70);
-  doc.text(`${new Date().toLocaleString()}`, 230, 70);
   doc.text(`${amountInWords}`, 110, 100);
+  doc.setFontSize(14);
+  doc.text(`${new Date().toLocaleString()}`, 230, 70);
+  
 
 
   const pdfBlob = doc.output("blob");
