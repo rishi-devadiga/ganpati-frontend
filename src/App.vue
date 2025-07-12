@@ -27,9 +27,22 @@
                 <label class="form-label">Phone</label>
                 <input v-model="form.phone" class="form-control" placeholder="Your Phone" required />
               </div>
+              <div id="g_id_onload"
+                data-client_id="903279726169-gls0ofufd7qftjeov9crjke2lqp6rvjs.apps.googleusercontent.com"
+                data-callback="handleGoogle"
+                data-auto_prompt="false">
+              </div>
+              <div class="g_id_signin"
+                  data-type="standard"
+                  data-size="large"
+                  data-theme="outline"
+                  data-text="sign_in_with"
+                  data-shape="rectangular"
+                  data-logo_alignment="left">
+              </div>
               <div class="mb-3">
                 <label class="form-label">Email</label>
-                <input v-model="form.email" type="email" class="form-control" placeholder="Your Email" required />
+                <input v-model="form.email" type="email" class="form-control" placeholder="Your Email" :readonly="!!form.email" required />
               </div>
               <div class="mb-3">
                 <label class="form-label">Transaction Type</label>
@@ -46,10 +59,14 @@
               <!-- Status dropdown only if cash -->
               <div v-if="form.transaction_type === 'cash'" class="mb-3">
                 <label>Status</label>
-                <select v-model="status" class="form-select" required>
+                <select v-model="form.status" class="form-select" required>
                   <option value="pending">Pending</option>
                   <option value="completed">Completed</option>
                 </select>
+              </div>
+              <div v-if="form.transaction_type === 'cash' && form.status === 'pending'" class="mb-3">
+                <label class="form-label">Half Payment Made (INR)</label>
+                <input v-model.number="form.half_payment" type="number" min="0" :max="form.amount" class="form-control" placeholder="Enter half payment amount" required />
               </div>
               <div class="d-flex justify-content-between">
                 <button v-if="form.transaction_type === 'online'" type="button" class="btn btn-success" @click="payNow">
@@ -77,7 +94,7 @@ import jsPDF from 'jspdf'
 import axios from 'axios'
 import { toWords } from 'number-to-words'
 
-const BACKEND_URL = "https://ganpati-backend.onrender.com";
+const BACKEND_URL = "http://localhost:5000";
 
 const form = ref({
   name: '',
@@ -86,6 +103,7 @@ const form = ref({
   email: '',
   transaction_type: '',
   amount: null,
+  half_payment: null, // 1. Add half payment field
   status: '' // 1. Add status field to form
 })
 const data = ref({ status: '' }) // 1. Track payment status
@@ -230,6 +248,15 @@ const cashPay = async () => {
     data.value.status = 'Failure';
   }
 }
+
+// Add this function to window so Google can call it
+window.handleGoogle = (response) => {
+  // Decode the JWT credential
+  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+  // Set the email in your form
+  form.value.email = payload.email;
+};
+
 </script>
 
 
